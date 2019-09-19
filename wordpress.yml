@@ -1,0 +1,56 @@
+---
+ - hosts: web1
+   become: true
+   tasks:
+    - name: Install packages
+      apt: name={{ item }} state=latest
+      with_items:
+       - apache2
+       - mysql-server
+       - mysql-client
+       - php
+       - libapache2-mod-php
+       - php-mcrypt
+       - php-mysql
+       - unzip
+    
+    - name: Setting mysqladmin root password
+      command: mysqladmin -u root password rootpassword
+
+    - name: Downloading sqlcommands
+      get_url:
+        url: https://gitlab.com/roybhaskar9/devops/raw/master/coding/chef/chefwordpress/files/default/mysqlcommands
+        dest: /tmp/mysqlcommands
+
+    - name: Downloading wordpress
+      get_url:
+        url:  https://wordpress.org/latest.zip
+        dest: /tmp/latest.zip 
+
+    - name: Unzipping latest.zip to /var/www/html
+      unarchive:
+        src: /tmp/latest.zip 
+        dest: /var/www/html
+        remote_src: yes
+
+    - name: Downloading wp-config-sample.php
+      get_url:
+        url:  https://gitlab.com/roybhaskar9/devops/raw/master/coding/chef/chefwordpress/files/default/wp-config-sample.php
+        dest: /var/www/html/wordpress/wp-config.php
+
+    - name: set properties
+      file:
+        path: /var/www/html/wordpress
+        state: directory
+        recurse: yes
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    
+   
+    - name: Restarting apache2
+      service: 
+        name: apache2
+        state: restarted
+
